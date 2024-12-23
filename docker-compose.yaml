@@ -1,0 +1,26 @@
+version: '3'
+services:
+  panoptic-tsdf:
+    image: ghcr.io/ethz-asl/panoptic_mapping:main
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    environment:
+      - "DISPLAY=$DISPLAY"
+    privileged: true
+    network_mode: "host"
+    command: /bin/bash
+    # Keep container running
+    stdin_open: true 
+    tty: true
+
+    # FOR GPU SUPPORT
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
