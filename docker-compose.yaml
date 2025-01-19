@@ -7,6 +7,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - /media/kameel/dev/Datasets:/Datasets
     environment:
       - "DISPLAY=$DISPLAY"
     privileged: true
@@ -16,7 +17,7 @@ services:
     stdin_open: true 
     tty: true
 
-    # FOR GPU SUPPORT
+    # FOR GPU SUPPORT, seems to be not needed as Voxblox is CPU only
     deploy:
       resources:
         reservations:
