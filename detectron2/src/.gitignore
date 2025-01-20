@@ -1,0 +1,6 @@
+# Ignore the Images used for testing
+*.jpg
+*.jpeg
+*.png
+*.json
+src/images/

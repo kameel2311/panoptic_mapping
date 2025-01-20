@@ -8,6 +8,7 @@ services:
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - /media/kameel/dev/Datasets:/Datasets
+      - ./src:/detectron2
     environment:
       - "DISPLAY=$DISPLAY"
     privileged: true
