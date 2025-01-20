@@ -133,7 +133,7 @@ def create_labels(meta_data, output_file: str = ""):
         return len(meta_data.stuff_classes), ""
 
 
-def create_predictions(params: Params):
+def create_predictions(params: Params, device="cpu"):
     # Verify.
     if not os.path.isdir(params.target_path):
         print("Error: Directory '%s' does not exist." % params.target_path)
@@ -145,7 +145,7 @@ def create_predictions(params: Params):
     cfg = get_cfg()
     cfg.merge_from_file(model_zoo.get_config_file(params.model))
     cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(params.model)
-    cfg.MODEL.DEVICE = "cpu"
+    cfg.MODEL.DEVICE = device
     predictor = DefaultPredictor(cfg)
     print("done!")
 
@@ -189,6 +189,9 @@ def create_predictions(params: Params):
             file_id = im_file[:12]
         else:
             file_id = im_file[:6]
+
+        if device == "cuda":
+            panoptic_seg = panoptic_seg.cpu()
         id_img = panoptic_seg.numpy()
         cv2.imwrite(
             os.path.join(params.target_path, file_id + "_predicted2.png"), id_img
@@ -235,4 +238,4 @@ if __name__ == "__main__":
             params.target_path = os.path.join(base_dir, d, "sequence")
             create_predictions(params)
     else:
-        create_predictions(params)
+        create_predictions(params, "cuda")
