@@ -1,0 +1,28 @@
+version: '3'
+services:
+  detectron2:
+    image: pytorch/pytorch:detectron
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /media/kameel/dev/Datasets:/workspace/Datasets
+      - ../dataset_creation:/workspace/dataset_creation
+    environment:
+      - "DISPLAY=$DISPLAY"
+    privileged: true
+    network_mode: "host"
+    command: /bin/bash
+    # Keep container running
+    stdin_open: true 
+    tty: true
+
+    # FOR GPU SUPPORT, seems to be not needed as Voxblox is CPU only
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

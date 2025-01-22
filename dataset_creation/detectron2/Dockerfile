@@ -6,7 +6,7 @@ RUN apt install -y git-all \
     && apt install -y build-essential 
 
 RUN pip install ninja \
-    && python -m pip install 'git+https://github.com/facebookresearch/detectron2.git' \
-    && pip install --force-reinstall -v "numpy==1.25.2" \
-    && pip install opencv-python
+    && python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
 
+RUN pip install --force-reinstall -v "numpy==1.25.2" \
+    && pip install opencv-python

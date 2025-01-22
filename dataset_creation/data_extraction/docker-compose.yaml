@@ -1,14 +1,14 @@
 version: '3'
 services:
-  detectron2:
-    image: pytorch/pytorch:detectron
+  data_extraction:
+    image: ros:humble-ros-base
     # build:
     #   context: .
     #   dockerfile: Dockerfile
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
-      - /media/kameel/dev/Datasets:/Datasets
-      - ./src:/detectron2
+      - /media/kameel/dev/Datasets:/workspace/Datasets
+      - ../../dataset_creation:/workspace/dataset_creation
     environment:
       - "DISPLAY=$DISPLAY"
     privileged: true
