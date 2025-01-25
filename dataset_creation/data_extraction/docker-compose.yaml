@@ -1,14 +1,15 @@
 version: '3'
 services:
   data_extraction:
-    image: ros:humble-ros-base
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile
+    # image: ros:humble-ros-base
+    build:
+      context: .
+      dockerfile: Dockerfile
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - /media/kameel/dev/Datasets:/workspace/Datasets
       - ../../dataset_creation:/workspace/dataset_creation
+      - ../../iw.vis_hub:/workspace/iw.vis_hub
     environment:
       - "DISPLAY=$DISPLAY"
     privileged: true

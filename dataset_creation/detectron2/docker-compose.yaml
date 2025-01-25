@@ -1,14 +1,14 @@
 version: '3'
 services:
   detectron2:
-    image: pytorch/pytorch:detectron
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile
+    # image: pytorch/pytorch:detectron
+    build:
+      context: .
+      dockerfile: Dockerfile
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - /media/kameel/dev/Datasets:/workspace/Datasets
-      - ../dataset_creation:/workspace/dataset_creation
+      - ../../dataset_creation:/workspace/dataset_creation
     environment:
       - "DISPLAY=$DISPLAY"
     privileged: true

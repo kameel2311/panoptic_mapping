@@ -166,7 +166,8 @@ def create_predictions(params: Params, device="cpu"):
     if params.rio:
         files = [f for f in files if f.endswith(".color.jpg")]
     else:
-        files = [f for f in files if f.endswith(".color.jpg")]
+        files = [f for f in files if f.endswith("_color.png")]
+
     times = []
 
     # Run inference.
@@ -194,7 +195,7 @@ def create_predictions(params: Params, device="cpu"):
             panoptic_seg = panoptic_seg.cpu()
         id_img = panoptic_seg.numpy()
         cv2.imwrite(
-            os.path.join(params.target_path, file_id + "_predicted2.png"), id_img
+            os.path.join(params.target_path, file_id + "_predicted.png"), id_img
         )
 
         for segment_info in segments_info:
@@ -220,10 +221,10 @@ if __name__ == "__main__":
     # Params.
     params = Params()
     params.model = "COCO-PanopticSegmentation/panoptic_fpn_R_101_3x.yaml"
-    params.target_path = "./images"
-    params.output_label_file = (
-        ""  #'/home/lukas/Documents/Datasets/flat_dataset/detectron_labels.csv'
-    )
+    # params.target_path = "/workspace/Datasets/docking_3_synced/run1"
+    params.target_path = "/workspace/dataset_creation/detectron2/test"
+    params.output_label_file = ""
+    # params.output_label_file = "/workspace/Datasets/docking_3_synced/detectron_labels.csv"  #'/home/lukas/Documents/Datasets/flat_dataset/detectron_labels.csv'
     params.rio = False
 
     # Run
