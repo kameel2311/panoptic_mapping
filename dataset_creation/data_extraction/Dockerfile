@@ -7,8 +7,8 @@ RUN apt-get update \
        python3-pip \
        python3-opencv \
        ros-humble-cv-bridge \
-       ffmpeg libsm6 libxext6 \
-RUN pip install pillow scipy numpy==1.25 \
+       ffmpeg libsm6 libxext6 
+RUN pip install pillow scipy numpy==1.25 matplotlib python3-tk \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* 
 

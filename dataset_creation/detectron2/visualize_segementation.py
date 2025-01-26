@@ -3,7 +3,7 @@ import numpy as np
 import os
 import json
 
-DATASET_PATH = "/workspace/Datasets/docking_3_synced"
+DATASET_PATH = "/workspace/Datasets/docking_3_sync_aligned"
 # DATASET_PATH = "/workspace/Datasets/flat_dataset"
 RUN_NAME = "run1"
 MAX_LABELS = 134
