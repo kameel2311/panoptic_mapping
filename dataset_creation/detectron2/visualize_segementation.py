@@ -3,8 +3,8 @@ import numpy as np
 import os
 import json
 
-# DATASET_PATH = "/workspace/Datasets/docking_3_synced"
-DATASET_PATH = "/workspace/Datasets/flat_dataset"
+DATASET_PATH = "/workspace/Datasets/docking_3_synced"
+# DATASET_PATH = "/workspace/Datasets/flat_dataset"
 RUN_NAME = "run1"
 MAX_LABELS = 134
 VISUALIZE_CLASS = True  # Else Coloured by Instance

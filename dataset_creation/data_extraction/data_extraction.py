@@ -72,13 +72,23 @@ class DataExtractor:
         reader.open(storage_options_in, self.converter_options)
         return reader
 
+    def save_timestamps_as_csv(self, image_to_timestamps, file_name="timestamps.csv"):
+        assert not os.path.exists(
+            os.path.join(self.output_dir, self.run_folder_name, file_name)
+        ), "File already exists."
+        with open(
+            os.path.join(self.output_dir, self.run_folder_name, file_name), "w"
+        ) as f:
+            f.write("Image_ID, TimeStamp\n")
+            for image_id, timestamp in image_to_timestamps.items():
+                timestamp = timestamp.sec * 1e9 + timestamp.nanosec
+                f.write(f"{image_id}, {timestamp}\n")
+
     def get_intrisnics(self, intrinsics_topic, modified=False):
         self.tmp_reader = self.create_reader()
         try:
             while self.tmp_reader.has_next():
                 topic, data, timestamp = self.tmp_reader.read_next()
-                print("Topic: ", topic)
-                print("Modified Topic ?: ", modified)
                 if topic == intrinsics_topic:
                     data = deserialize_message(data, CameraInfo)
                     if modified:
@@ -235,6 +245,10 @@ class DataExtractor:
 
         finally:
             del reader
+
+        # Save the timestamps
+        self.save_timestamps_as_csv(img_no_and_ts, file_name="timestamps.csv")
+        print("Timestamps saved.")
 
 
 def main():
