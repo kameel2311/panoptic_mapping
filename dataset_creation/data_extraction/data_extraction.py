@@ -79,7 +79,7 @@ class DataExtractor:
         with open(
             os.path.join(self.output_dir, self.run_folder_name, file_name), "w"
         ) as f:
-            f.write("Image_ID, TimeStamp\n")
+            f.write("ImageID,TimeStamp\n")
             for image_id, timestamp in image_to_timestamps.items():
                 timestamp = timestamp.sec * 1e9 + timestamp.nanosec
                 f.write(f"{image_id}, {timestamp}\n")
