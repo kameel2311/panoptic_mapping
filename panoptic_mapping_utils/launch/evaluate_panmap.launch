@@ -1,18 +1,18 @@
 <launch>
 <!-- ============ Arguments ============ -->
   <!-- Groundtruth -->
-  <arg name="ground_truth_pointcloud_file" default="/home/lukas/Documents/Datasets/3RScan/scene2.ply"/>
+  <arg name="ground_truth_pointcloud_file" default="/Datasets/flat_dataset/flat_1_gt_10000.ply"/>
   
   <!-- Source map -->
-<arg name="map_file" default="/home/lukas/Documents/PanopticMapping/run1.panmap"/>
+  <arg name="map_file" default="/Datasets/saved_maps/flat_run1.panmap"/>
   
   <!-- Params -->
   <arg name="maximum_distance" default="0.05"/>
   <arg name="evaluate" default="true"/>
-  <arg name="compute_coloring" default="false"/>
+  <arg name="compute_coloring" default="true"/>
   <arg name="color_by_max_error" default="false"/>
   <arg name="color_by_mesh_distance" default="false"/>
-  <arg name="visualize" default="false"/>
+  <arg name="visualize" default="true"/>
   <arg name="ignore_truncated_points" default="true"/>
   <arg name="is_single_tsdf" default="false"/>
 

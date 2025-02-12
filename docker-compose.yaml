@@ -4,10 +4,11 @@ services:
     image: ghcr.io/ethz-asl/panoptic_mapping:main
     build:
       context: .
-      dockerfile: Dockerfile
+      # dockerfile: Dockerfile # There is a bug, just mount on precomplied image
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - /media/kameel/dev/Datasets:/Datasets
+      - .:/catkin_ws/src/panoptic_mapping
     environment:
       - "DISPLAY=$DISPLAY"
     privileged: true
