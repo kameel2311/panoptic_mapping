@@ -1,3 +1,5 @@
+"""Very Naive Script to Compare Databases"""
+
 import cv2
 import numpy as np
 import os
@@ -80,41 +82,44 @@ def get_class_count(class_count):
     return database
 
 
-def plot_metadata(instance_frame_count, class_frame_count, class_distribution):
-    fig, ax = plt.subplots(3, 1, figsize=(10, 10))
-    ax[0].plot(instance_frame_count, label="Instances per Frame")
+def plot_metadata_both(
+    flat_instance_frame_count,
+    flat_class_frame_count,
+    warehouse_instance_frame_count,
+    warehouse_class_frame_count,
+):
+    fig, ax = plt.subplots(2, 1, figsize=(10, 10))
+    ax[0].plot(flat_instance_frame_count, label="Flat", color="blue", alpha=0.5)
+    ax[0].plot(
+        warehouse_instance_frame_count, label="Warehouse", color="red", alpha=0.5
+    )
     ax[0].set_title("Count of Instances per Frame")
     ax[0].set_xlabel("Frame")
     ax[0].set_ylabel("Count")
     ax[0].grid()
-    ax[1].plot(class_frame_count, label="Classes per Frame")
+    ax[0].legend()
+    ax[1].plot(flat_class_frame_count, label="Flat", color="blue", alpha=0.5)
+    ax[1].plot(warehouse_class_frame_count, label="Warehouse", color="red", alpha=0.5)
     ax[1].set_title("Count of Classes per Frame")
     ax[1].set_xlabel("Frame")
     ax[1].set_ylabel("Count")
     ax[1].grid()
-    ax[2].bar(class_distribution.keys(), class_distribution.values())
-    ax[2].set_title("Class Distribution")
-    ax[2].set_xlabel("Class ID")
-    ax[2].set_ylabel("Count")
-    ax[2].set_xticks(list(class_distribution.keys()))  # Set tick positions
-    ax[2].set_xticklabels(class_distribution.keys(), rotation=45)  # Rotate labels
-    ax[2].grid()
-    plt.suptitle(f"Dataset: {DATASET_NAME} - Run: {RUN_NAME}")
+    ax[1].legend()
+    plt.suptitle("Flat vs Warehouse Class and Instance Counts")
     plt.show()
 
 
 DATASET_DIR = "/workspace/Datasets"
-# DATASET_NAME = "docking_3_sync_aligned"
-DATASET_NAME = "flat_dataset"
-DATASET_PATH = os.path.join(DATASET_DIR, DATASET_NAME)
-RUN_NAME = "run1"
 MAX_LABELS = 134
-VISUALIZE_CLASS = False  # Else Coloured by Instance
-VISUALIZE = True
+VISUALIZE_CLASS = True  # Else Coloured by Instance
+VISUALIZE = False
 np.random.seed(40)
 
 
 def main():
+    DATASET_NAME = "flat_dataset"
+    DATASET_PATH = os.path.join(DATASET_DIR, DATASET_NAME)
+    RUN_NAME = "run1"
     # Check if directory exists
     if not os.path.exists(os.path.join(DATASET_PATH, RUN_NAME)):
         raise FileNotFoundError(
@@ -133,8 +138,7 @@ def main():
     predictions = [
         f
         for f in os.listdir(os.path.join(DATASET_PATH, RUN_NAME))
-        # if f.endswith("_predicted.png")
-        if f.endswith("_segmentation.png")
+        if f.endswith("_predicted.png")
     ]
     predictions.sort()
     labels = [
@@ -171,21 +175,20 @@ def main():
             # print(instance_to_class)
 
         # Convert instance IDs to class IDs
-        # class_prediction = np.vectorize(instance_to_class.get)(prediction)
-        # classes_in_frame = np.unique(class_prediction)
-        # labels_in_frame = [classID_to_name[class_id] for class_id in classes_in_frame]
+        class_prediction = np.vectorize(instance_to_class.get)(prediction)
+        classes_in_frame = np.unique(class_prediction)
+        labels_in_frame = [classID_to_name[class_id] for class_id in classes_in_frame]
         # print(labels_in_frame)
 
         # Collect per frame metadata
         per_frame_instances.append(len(np.unique(prediction)))
-        # per_frame_classes.append(len(classes_in_frame))
-        # class_count.append(labels_in_frame)
+        per_frame_classes.append(len(classes_in_frame))
+        class_count.append(labels_in_frame)
 
         # Visualize segmentation
         if VISUALIZE:
             if VISUALIZE_CLASS:
-                pass
-                # result = visualize_segmentation(image, class_prediction, id_color_map)
+                result = visualize_segmentation(image, class_prediction, id_color_map)
             else:
                 result = visualize_segmentation(image, prediction, id_color_map)
 
@@ -194,8 +197,86 @@ def main():
             cv2.waitKey(0)
             cv2.destroyAllWindows()
 
+    flat_instances = per_frame_instances
+    flat_classes = per_frame_classes
     # Plot Metadata
-    plot_metadata(per_frame_instances, per_frame_classes, get_class_count(class_count))
+
+    DATASET_NAME = "docking_3_sync_aligned"
+    DATASET_PATH = os.path.join(DATASET_DIR, DATASET_NAME)
+    # Check if directory exists
+    if not os.path.exists(os.path.join(DATASET_PATH, RUN_NAME)):
+        raise FileNotFoundError(
+            f"Directory '{os.path.join(DATASET_PATH, RUN_NAME)}' not found."
+        )
+    else:
+        print(f"Visualizing segmentation for '{RUN_NAME}'.")
+
+    # Gather Images and Predictions
+    images = [
+        f
+        for f in os.listdir(os.path.join(DATASET_PATH, RUN_NAME))
+        if f.endswith("_color.png")
+    ]
+    images.sort()
+    predictions = [
+        f
+        for f in os.listdir(os.path.join(DATASET_PATH, RUN_NAME))
+        if f.endswith("_predicted.png")
+    ]
+    predictions.sort()
+    labels = [
+        f
+        for f in os.listdir(os.path.join(DATASET_PATH, RUN_NAME))
+        if f.endswith("_labels.json")
+    ]
+    labels.sort()
+
+    # Load Detection Labels
+    detection_metadata = pd.read_csv(os.path.join(DATASET_PATH, "detectron_labels.csv"))
+
+    # Generate color map
+    id_color_map = generate_colour_code(MAX_LABELS)
+    classID_to_name = get_id_label_map(detection_metadata)
+
+    # Per Frame Metadata
+    per_frame_instances = []
+    per_frame_classes = []
+    class_count = []
+
+    # Process each image-prediction pair
+    for img_name, pred_name, label_name in tqdm(zip(images, predictions, labels)):
+        # Load images
+        image = cv2.imread(os.path.join(DATASET_PATH, RUN_NAME, img_name))
+        prediction = cv2.imread(
+            os.path.join(DATASET_PATH, RUN_NAME, pred_name), cv2.IMREAD_GRAYSCALE
+        )
+
+        # Load JSON labels
+        with open(os.path.join(DATASET_PATH, RUN_NAME, label_name), "r") as file:
+            label = json.load(file)
+            instance_to_class = create_instance_to_class_map(label)
+            # print(instance_to_class)
+
+        # Convert instance IDs to class IDs
+        class_prediction = np.vectorize(instance_to_class.get)(prediction)
+        classes_in_frame = np.unique(class_prediction)
+        labels_in_frame = [classID_to_name[class_id] for class_id in classes_in_frame]
+        # print(labels_in_frame)
+
+        # Collect per frame metadata
+        per_frame_instances.append(len(np.unique(prediction)))
+        per_frame_classes.append(len(classes_in_frame))
+        class_count.append(labels_in_frame)
+
+    warehouse_instances = per_frame_instances
+    warehouse_classes = per_frame_classes
+
+    plot_metadata_both(
+        flat_instances,
+        flat_classes,
+        warehouse_instances,
+        warehouse_classes,
+    )
 
 
 if __name__ == "__main__":

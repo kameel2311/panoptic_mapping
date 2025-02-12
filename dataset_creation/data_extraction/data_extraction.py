@@ -10,6 +10,7 @@ from cv_bridge import CvBridge
 import os
 from scipy.spatial.transform import Rotation as R
 from PIL import Image as PILImage
+import time
 
 
 class DataExtractor:
@@ -25,6 +26,7 @@ class DataExtractor:
         run_folder_name,
         pose_message_type=Odometry,
         pose_apply_transform=None,
+        downscale_factor=1,
     ):
         self.bridge = CvBridge()
         self.input_bag_path = input_bag_path
@@ -38,6 +40,7 @@ class DataExtractor:
         self.output_dir = output_dir
         self.run_folder_name = run_folder_name
         self.pose_apply_transform = pose_apply_transform
+        self.downscale_factor = downscale_factor
 
         if self.pose_apply_transform is not None:
             print("Applying transformation to pose.")
@@ -51,23 +54,23 @@ class DataExtractor:
                 f"Only Odometry is currently supported, please add support for {pose_message_type}."
             )
 
-        # # Create the output directories
-        # if not os.path.isdir(self.output_dir):
-        #     os.makedirs(self.output_dir)
-        #     print(f"Created new output directory at '{self.output_dir}'.")
-        # else:
-        #     raise ValueError(
-        #         "Output directory already exists. Please provide a new one."
-        #     )
-        # if not os.path.isdir(os.path.join(self.output_dir, self.run_folder_name)):
-        #     os.makedirs(os.path.join(self.output_dir, self.run_folder_name))
-        #     print(
-        #         f"Created new output directory at '{os.path.join(self.output_dir, self.run_folder_name)}'."
-        #     )
-        # else:
-        #     raise ValueError(
-        #         "Output directory already exists. Please provide a new one."
-        #     )
+        # Create the output directories
+        if not os.path.isdir(self.output_dir):
+            os.makedirs(self.output_dir)
+            print(f"Created new output directory at '{self.output_dir}'.")
+        else:
+            raise ValueError(
+                "Output directory already exists. Please provide a new one."
+            )
+        if not os.path.isdir(os.path.join(self.output_dir, self.run_folder_name)):
+            os.makedirs(os.path.join(self.output_dir, self.run_folder_name))
+            print(
+                f"Created new output directory at '{os.path.join(self.output_dir, self.run_folder_name)}'."
+            )
+        else:
+            raise ValueError(
+                "Output directory already exists. Please provide a new one."
+            )
 
     def create_reader(self):
         reader = rosbag2_py.SequentialReader()
@@ -97,15 +100,34 @@ class DataExtractor:
                 if topic == intrinsics_topic:
                     data = deserialize_message(data, CameraInfo)
                     if modified:
-                        center = np.array([data.k[2], data.k[5]], dtype=np.float32)
+                        center = np.array(
+                            [
+                                int(data.k[2] / self.downscale_factor),
+                                int(data.k[5] / self.downscale_factor),
+                            ],
+                            dtype=np.float32,
+                        )
                     else:
-                        center = np.array([data.k[5], data.k[2]], dtype=np.float32)
+                        center = np.array(
+                            [
+                                int(data.k[5] / self.downscale_factor),
+                                int(data.k[2] / self.downscale_factor),
+                            ],
+                            dtype=np.float32,
+                        )
                     intrinsics_data = {
                         "focal_length": np.array(
-                            [data.k[0], data.k[4]], dtype=np.float32
+                            [
+                                data.k[0] / self.downscale_factor,
+                                data.k[4] / self.downscale_factor,
+                            ],
+                            dtype=np.float32,
                         ),
                         "center": center,
-                        "dimensions": (data.width, data.height),
+                        "dimensions": (
+                            int(data.width / self.downscale_factor),
+                            int(data.height / self.downscale_factor),
+                        ),
                     }
                     return intrinsics_data
         finally:
@@ -131,13 +153,13 @@ class DataExtractor:
 
     def extarct_from_bag(self):
         # Get Intristics
-        # if self.intrinsics_topic is not None:
-        #     self.intrinsics = self.get_intrisnics(
-        #         self.intrinsics_topic, modified=self.modified_intrinsics
-        #     )
-        #     print("Extarcted Intrinsics: ", self.intrinsics)
-        #     # Save Intrinsics
-        #     self.save_extriniscs()
+        if self.intrinsics_topic is not None:
+            self.intrinsics = self.get_intrisnics(
+                self.intrinsics_topic, modified=self.modified_intrinsics
+            )
+            print("Extarcted Intrinsics: ", self.intrinsics)
+            # Save Intrinsics
+            self.save_extriniscs()
 
         # Loop through the depth messages and align them
         reader = self.create_reader()
@@ -147,6 +169,8 @@ class DataExtractor:
         rgb_image_no = 0
         depth_image_no = 0
         pose_no = 0
+
+        first_pose = None  # For Odom to start from Zero
 
         # Go through the bag file
         try:  # As closing methods not implemented all distros of rosbag2_py
@@ -168,6 +192,11 @@ class DataExtractor:
                     depth_image = PILImage.fromarray(
                         self.bridge.imgmsg_to_cv2(data, desired_encoding="passthrough")
                     )
+                    new_size = (
+                        int(depth_image.size[0] / self.downscale_factor),
+                        int(depth_image.size[1] / self.downscale_factor),
+                    )
+                    depth_image = depth_image.resize(new_size)
                     # Save the image
                     image_id = "%06d" % depth_image_no
                     depth_image_no += 1
@@ -177,13 +206,13 @@ class DataExtractor:
                         assert (
                             img_no_and_ts[image_id] == data.header.stamp
                         ), f"Image timestamps don't match for frame {image_id}"
-                    # depth_image.save(
-                    #     os.path.join(
-                    #         self.output_dir,
-                    #         self.run_folder_name,
-                    #         image_id + "_depth.tiff",
-                    #     )
-                    # )
+                    depth_image.save(
+                        os.path.join(
+                            self.output_dir,
+                            self.run_folder_name,
+                            image_id + "_depth.tiff",
+                        )
+                    )
                 elif topic == self.rgb_topic:
                     # Deserialize the message
                     data = deserialize_message(data, Image)
@@ -191,6 +220,11 @@ class DataExtractor:
                     rgb_image = self.bridge.imgmsg_to_cv2(
                         data, desired_encoding="passthrough"
                     )
+                    new_size = (
+                        int(rgb_image.shape[1] / self.downscale_factor),
+                        int(rgb_image.shape[0] / self.downscale_factor),
+                    )
+                    rgb_image = cv2.resize(rgb_image, new_size)
                     # Save the image
                     image_id = "%06d" % rgb_image_no
                     rgb_image_no += 1
@@ -200,14 +234,14 @@ class DataExtractor:
                         assert (
                             img_no_and_ts[image_id] == data.header.stamp
                         ), f"Image timestamps don't match for frame {image_id}"
-                    # cv2.imwrite(
-                    #     os.path.join(
-                    #         self.output_dir,
-                    #         self.run_folder_name,
-                    #         image_id + "_color.png",
-                    #     ),
-                    #     cv2.cvtColor(rgb_image, cv2.COLOR_BGR2RGB),
-                    # )
+                    cv2.imwrite(
+                        os.path.join(
+                            self.output_dir,
+                            self.run_folder_name,
+                            image_id + "_color.png",
+                        ),
+                        cv2.cvtColor(rgb_image, cv2.COLOR_BGR2RGB),
+                    )
                 elif topic == self.pose_topic:
                     # Deserialize the message
                     data = deserialize_message(data, self.pose_message_type)
@@ -229,6 +263,19 @@ class DataExtractor:
                         baselink_pose[0:3, 0:3] = orientation_matrix
                         # Calculate the new pose
                         camera_pose = baselink_pose @ self.pose_apply_transform
+
+                        if first_pose is None:
+                            # first_pose = np.linalg.inv(camera_pose)
+                            # print("Camrea first Pose: ", camera_pose)
+                            first_pose = camera_pose.copy()
+                            first_pose[:3, :3] = np.zeros((3, 3))
+                            # print("First Pose: ", first_pose)
+
+                        # Zero out the odom's translation only
+                        # print("Camera Pose Pre: ", camera_pose)
+                        camera_pose -= first_pose
+                        # print("Camera Pose Post: ", camera_pose)
+
                         position = camera_pose[0:3, 3]
                         orientation_matrix = camera_pose[0:3, 0:3]
                     # Save the pose
@@ -266,13 +313,13 @@ class DataExtractor:
             del reader
 
         # Save the timestamps
-        # self.save_timestamps_as_csv(img_no_and_ts, file_name="timestamps.csv")
+        self.save_timestamps_as_csv(img_no_and_ts, file_name="timestamps.csv")
         print("Timestamps saved.")
 
 
 def main():
     input_bag_path = "/workspace/Datasets/ROS2_bags/docking_3_sync_aligned/docking_3_sync_aligned_0.db3"
-    output_dir = "/workspace/Datasets/docking_3_sync_aligned/"
+    output_dir = "/workspace/Datasets/docking_3_sync_aligned_resized/"
     run_folder_name = "run1"
     modified_intrinsics = False
 
@@ -301,6 +348,7 @@ def main():
         run_folder_name=run_folder_name,
         pose_message_type=Odometry,
         pose_apply_transform=baselink_T_camera,
+        downscale_factor=2,
     )
 
     modifier.extarct_from_bag()

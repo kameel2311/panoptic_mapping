@@ -10,6 +10,8 @@ DATA_DIR = "/workspace/Datasets/docking_3_sync_aligned"
 # DATA_DIR = "/workspace/Datasets/flat_dataset"
 RUN_NAME = "run1"
 
+# TODO: This code is deprecated.
+
 # From ROSBAG
 baselink_TRANS_camera = np.array([0.35, 0.005, 0.135])
 baselink_ROT_camera = np.array(

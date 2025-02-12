@@ -222,7 +222,7 @@ if __name__ == "__main__":
     # Params.
     params = Params()
     params.model = "COCO-PanopticSegmentation/panoptic_fpn_R_101_3x.yaml"
-    params.target_path = "/workspace/Datasets/docking_3_sync_aligned/run1"
+    params.target_path = "/workspace/Datasets/docking_3_sync_aligned_resized/run1"
     # params.target_path = "/workspace/dataset_creation/detectron2/test"
     params.output_label_file = ""
     # params.output_label_file = "/workspace/Datasets/docking_3_synced/detectron_labels.csv"  #'/home/lukas/Documents/Datasets/flat_dataset/detectron_labels.csv'
